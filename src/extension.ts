@@ -1,26 +1,50 @@
 // The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
+    // ステータスバーアイテムの作成
+    const zenButton = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+    zenButton.text = "禅";
+    zenButton.tooltip = "魚群の禅モードを表示";
+    zenButton.command = 'otak-zen.toggleZen';
+    zenButton.show();
+    context.subscriptions.push(zenButton);
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "otak-zen" is now active!');
+    let currentPanel: vscode.WebviewPanel | undefined = undefined;
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	const disposable = vscode.commands.registerCommand('otak-zen.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from otak-zen!');
-	});
+    const disposable = vscode.commands.registerCommand('otak-zen.toggleZen', () => {
+        if (currentPanel) {
+            currentPanel.dispose();
+            currentPanel = undefined;
+            return;
+        }
 
-	context.subscriptions.push(disposable);
+        currentPanel = vscode.window.createWebviewPanel(
+            'zenView',
+            '禅の時間',
+            vscode.ViewColumn.One,
+            {
+                enableScripts: true,
+                retainContextWhenHidden: true
+            }
+        );
+
+        currentPanel.webview.html = getWebviewContent(context.extensionUri);
+
+        currentPanel.onDidDispose(() => {
+            currentPanel = undefined;
+        });
+    });
+
+    context.subscriptions.push(disposable);
 }
 
-// This method is called when your extension is deactivated
 export function deactivate() {}
+
+function getWebviewContent(extensionUri: vscode.Uri): string {
+    const htmlPath = path.join(extensionUri.fsPath, 'src', 'zen.html');
+    const htmlContent = fs.readFileSync(htmlPath, 'utf8');
+    return htmlContent;
+}
