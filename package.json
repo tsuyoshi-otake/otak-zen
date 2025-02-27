@@ -30,7 +30,26 @@
         "command": "otak-zen.toggleZen",
         "title": "Toggle Zen Mode"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "OtakZen",
+      "properties": {
+        "otakZen.smallCreatureCount": {
+          "type": "number",
+          "default": 35,
+          "minimum": 1,
+          "maximum": 100,
+          "description": "小さな生き物の数"
+        },
+        "otakZen.koiCount": {
+          "type": "number",
+          "default": 7,
+          "minimum": 1,
+          "maximum": 20,
+          "description": "錦鯉の数"
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile && npm run postcompile",
@@ -51,8 +70,7 @@
     "typescript": "^5.7.3",
     "@vscode/test-cli": "^0.0.10",
     "@vscode/test-electron": "^2.4.1"
-  }
-,
+  },
   "files": [
     "out",
     "src/zen.html",

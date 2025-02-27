@@ -7,7 +7,25 @@ export function activate(context: vscode.ExtensionContext) {
     // ステータスバーアイテムの作成
     const zenButton = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
     zenButton.text = "禅";
-    zenButton.tooltip = "魚群の禅モードを表示";
+
+    // 各行のMarkdownを作成
+    const tooltipLines: vscode.MarkdownString[] = [];
+    
+    const line1 = new vscode.MarkdownString('$(zen-mode) 禅の時間');
+    line1.isTrusted = true;
+    line1.supportThemeIcons = true;
+    tooltipLines.push(line1);
+
+    // 空行
+    tooltipLines.push(new vscode.MarkdownString(''));
+
+    const line2 = new vscode.MarkdownString('$(gear) [設定を開く](command:workbench.action.openSettings?%22otakZen%22)');
+    line2.isTrusted = true;
+    line2.supportThemeIcons = true;
+    tooltipLines.push(line2);
+
+    // ツールチップを設定
+    zenButton.tooltip = tooltipLines.join('\n');
     zenButton.command = 'otak-zen.toggleZen';
     zenButton.show();
     context.subscriptions.push(zenButton);
@@ -31,11 +49,44 @@ export function activate(context: vscode.ExtensionContext) {
             }
         );
 
-        currentPanel.webview.html = getWebviewContent(context.extensionUri);
+        // 設定値を取得
+        const config = vscode.workspace.getConfiguration('otakZen');
+        const smallCreatureCount = config.get('smallCreatureCount', 35);
+        const koiCount = config.get('koiCount', 7);
+
+        // WebViewに設定値を渡す
+        const html = getWebviewContent(context.extensionUri);
+        currentPanel.webview.html = html.replace(
+            '</head>',
+            `<script>
+                window.otakZen = {
+                    smallCreatureCount: ${smallCreatureCount},
+                    koiCount: ${koiCount}
+                };
+            </script>
+            </head>`
+        );
 
         currentPanel.onDidDispose(() => {
             currentPanel = undefined;
         });
+
+        // 設定変更を監視して、WebViewを更新
+        context.subscriptions.push(
+            vscode.workspace.onDidChangeConfiguration(e => {
+                if (currentPanel && e.affectsConfiguration('otakZen')) {
+                    const newConfig = vscode.workspace.getConfiguration('otakZen');
+                    const newSmallCreatureCount = newConfig.get('smallCreatureCount', 35);
+                    const newKoiCount = newConfig.get('koiCount', 7);
+
+                    currentPanel.webview.postMessage({
+                        command: 'updateCounts',
+                        smallCreatureCount: newSmallCreatureCount,
+                        koiCount: newKoiCount
+                    });
+                }
+            })
+        );
     });
 
     context.subscriptions.push(disposable);

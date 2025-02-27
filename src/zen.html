@@ -82,9 +82,11 @@
         // すべての生き物の配列（小さな生き物と錦鯉を一緒に管理）
         const creatures = [];
         
+        // 設定値の取得
+        const settings = window.otakZen || { smallCreatureCount: 35, koiCount: 7 };
+        
         // 小さな生き物の作成
-        const smallCreatureCount = 35;
-        for (let i = 0; i < smallCreatureCount; i++) {
+        for (let i = 0; i < settings.smallCreatureCount; i++) {
             const size = 2.5 + Math.random() * 2.5;
             
             creatures.push({
@@ -116,8 +118,7 @@
         ];
         
         // 錦鯉の作成
-        const koiCount = 7;
-        for (let i = 0; i < koiCount; i++) {
+        for (let i = 0; i < settings.koiCount; i++) {
             const size = (3 + Math.random() * 2) * 1.5; // 通常の魚の1.5倍のサイズ
             const initialAngle = Math.random() * Math.PI * 2;
             
@@ -512,6 +513,66 @@
 
         // アニメーション開始
         animate();
+        
+        // VSCodeからのメッセージを受け取るハンドラー
+        window.addEventListener('message', event => {
+            const message = event.data;
+            if (message.command === 'updateCounts') {
+                // 既存の生き物をクリア
+                creatures.length = 0;
+                
+                // 新しい設定値で生き物を再作成
+                for (let i = 0; i < message.smallCreatureCount; i++) {
+                    const size = 2.5 + Math.random() * 2.5;
+                    creatures.push({
+                        x: canvas.width / 2 + (Math.random() - 0.5) * 300,
+                        y: canvas.height / 2 + (Math.random() - 0.5) * 300,
+                        angle: Math.random() * Math.PI * 2,
+                        speed: 0.5 + Math.random() * 0.8 + (4 - size) * 0.2,
+                        currentSpeed: 0,
+                        size: size,
+                        turnSpeed: 0.01 + Math.random() * 0.02,
+                        colorShift: Math.random() * 0.4,
+                        wanderPhase: Math.random() * Math.PI * 2,
+                        wanderRate: 0.02 + Math.random() * 0.03,
+                        wanderRange: 0.12 + Math.random() * 0.2,
+                        personality: Math.random(),
+                        hungry: 0.5 + Math.random() * 0.5,
+                        type: 'normal',
+                        color: {
+                            main: '#FFFFFF',
+                            pattern: '#FFFFFF'
+                        }
+                    });
+                }
+
+                for (let i = 0; i < message.koiCount; i++) {
+                    const size = (3 + Math.random() * 2) * 1.5;
+                    const initialAngle = Math.random() * Math.PI * 2;
+                    
+                    creatures.push({
+                        x: canvas.width / 2 + (Math.random() - 0.5) * 300,
+                        y: canvas.height / 2 + (Math.random() - 0.5) * 300,
+                        angle: initialAngle,
+                        targetAngle: initialAngle,
+                        speed: 0.5 + Math.random() * 0.4,
+                        currentSpeed: 0,
+                        size: size,
+                        turnSpeed: 0.002 + Math.random() * 0.005,
+                        wanderPhase: Math.random() * Math.PI * 2,
+                        wanderRate: 0.01 + Math.random() * 0.01,
+                        wanderRange: 0.03 + Math.random() * 0.04,
+                        hungry: 0.7 + Math.random() * 0.3,
+                        straightLineCounter: 0,
+                        straightLineDuration: 300 + Math.floor(Math.random() * 600),
+                        directionChangeAmount: 0.1 + Math.random() * 0.1,
+                        inertia: 0.98,
+                        type: 'koi',
+                        color: koiColors[Math.floor(Math.random() * koiColors.length)]
+                    });
+                }
+            }
+        });
     </script>
 </body>
 </html>
