@@ -35,7 +35,7 @@
   "scripts": {
     "vscode:prepublish": "npm run compile && npm run postcompile",
     "compile": "tsc -p ./",
-    "postcompile": "mkdir out 2>nul && copy src\\zen.html out\\",
+    "postcompile": "if not exist out mkdir out && copy src\\zen.html out\\",
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src",
@@ -54,8 +54,9 @@
   }
 ,
   "files": [
-    "src/extension.ts",
+    "out",
     "src/zen.html",
+    "images",
     "LICENSE"
   ]
 }
