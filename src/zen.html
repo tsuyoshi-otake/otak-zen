@@ -8,7 +8,7 @@
         body {
             margin: 0;
             padding: 0;
-            background: #000;
+            background: #1e1f1c;
             overflow: hidden;
         }
         canvas {
@@ -27,8 +27,8 @@
 
         // キャンバスのリサイズ処理
         function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            canvas.width = Math.floor(window.innerWidth);
+            canvas.height = Math.floor(window.innerHeight);
         }
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
@@ -146,7 +146,7 @@
         // アニメーションループ
         function animate() {
             // 画面を少しずつフェードアウト（深い宇宙のような効果）
-            ctx.fillStyle = 'rgba(0, 2, 15, 0.15)';
+            ctx.fillStyle = 'rgba(30, 31, 28, 0.15)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
             // 現在時刻の更新
@@ -401,7 +401,9 @@
                 
                 // 生き物の描画（通常の魚と錦鯉で描画方法が異なる）
                 ctx.save();
-                ctx.translate(creature.x, creature.y);
+                const tx = creature.type === 'normal' ? Math.round(creature.x) : creature.x;
+                 const ty = creature.type === 'normal' ? Math.round(creature.y) : creature.y;
+                 ctx.translate(tx, ty);
                 ctx.rotate(creature.angle);
                 
                 // サイズ設定
@@ -411,7 +413,7 @@
                 // 通常の白い魚の描画
                 if (creature.type === 'normal') {
                     // 微妙な色の違い（青みがかった白）
-                    const brightness = 240 + Math.floor(creature.colorShift * 15);
+                    const brightness = (creature.color.main === '#FFFFFF') ? 255 : 240 + Math.floor(creature.colorShift * 15);
                     ctx.fillStyle = `rgb(${brightness}, ${brightness}, 255)`;
                     
                     // 生命体の流線型の形を描く
