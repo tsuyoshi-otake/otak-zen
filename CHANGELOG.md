@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.2] - 2025-02-27
+### Added
+- Added configuration options:
+  - `otakZen.smallCreatureCount`: Configure the number of small creatures
+  - `otakZen.koiCount`: Configure the number of koi fish
+- Enhanced tooltip with live settings display and quick settings access
+
 ## [1.0.1] - 2025-02-27
 ### Added
 - Additional files included in the package.

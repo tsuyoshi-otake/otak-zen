@@ -8,24 +8,35 @@ export function activate(context: vscode.ExtensionContext) {
     const zenButton = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
     zenButton.text = "禅";
 
-    // 各行のMarkdownを作成
-    const tooltipLines: vscode.MarkdownString[] = [];
-    
-    const line1 = new vscode.MarkdownString('$(zen-mode) 禅の時間');
-    line1.isTrusted = true;
-    line1.supportThemeIcons = true;
-    tooltipLines.push(line1);
+    // 設定値を取得して表示するツールチップを作成
+    function updateTooltip() {
+        const config = vscode.workspace.getConfiguration('otakZen');
+        const smallCreatureCount = config.get('smallCreatureCount', 35);
+        const koiCount = config.get('koiCount', 7);
 
-    // 空行
-    tooltipLines.push(new vscode.MarkdownString(''));
+        const tooltip = new vscode.MarkdownString();
+        tooltip.isTrusted = true;
+        tooltip.supportThemeIcons = true;
+        tooltip.appendMarkdown('$(zen-mode) Zen Configuration\n\n---\n\n');
+        tooltip.appendMarkdown(`small: ${smallCreatureCount}\n`);
+        tooltip.appendMarkdown(`koi: ${koiCount}\n\n`);
+        tooltip.appendMarkdown('$(gear) [設定を開く](command:workbench.action.openSettings?%22otakZen%22)');
+        
+        zenButton.tooltip = tooltip;
+    }
 
-    const line2 = new vscode.MarkdownString('$(gear) [設定を開く](command:workbench.action.openSettings?%22otakZen%22)');
-    line2.isTrusted = true;
-    line2.supportThemeIcons = true;
-    tooltipLines.push(line2);
+    // 初期ツールチップを設定
+    updateTooltip();
 
-    // ツールチップを設定
-    zenButton.tooltip = tooltipLines.join('\n');
+    // 設定変更時にツールチップを更新
+    context.subscriptions.push(
+        vscode.workspace.onDidChangeConfiguration(e => {
+            if (e.affectsConfiguration('otakZen')) {
+                updateTooltip();
+            }
+        })
+    );
+
     zenButton.command = 'otak-zen.toggleZen';
     zenButton.show();
     context.subscriptions.push(zenButton);

@@ -12,16 +12,20 @@ The Webview content is defined in `src/zen.html` and dynamically renders a seren
 
 ## Key Features
 - **Status Bar Display**  
-  A button labeled "禅" appears in the bottom right corner with a tooltip "Display fish school meditation mode".
+  A button labeled "禅" appears in the bottom right corner. The tooltip shows current settings and provides quick access to configuration.
 - **Webview Display**  
   When triggered, the extension (as managed in `src/extension.ts`) opens a Webview which loads the content from `src/zen.html`.  
   - Uses HTML5 canvas to render dynamic animations of fish.
   - Interactive elements respond to mouse movements to alter the fish motion.
+- **Customizable Settings**
+  - `otakZen.smallCreatureCount`: Configure the number of small creatures (default: 35)
+  - `otakZen.koiCount`: Configure the number of koi fish (default: 7)
 
 ## Usage
 1. Launch VS Code and install the extension.
 2. Click the "禅" button in the status bar to open the Webview.
 3. In the Webview, enjoy the animated scene of fish along with interactive feeding actions.
+4. Customize the number of creatures through VS Code settings.
 
 ## Development
 - **Main Extension Code:** `src/extension.ts`  
@@ -63,4 +67,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-For more information, visit the [GitHub repository](https://github.com/tsuyoshi-otake-system-exe-jp/otak-monitor).
+For more information, visit the [GitHub repository](https://github.com/tsuyoshi-otake/otak-zen).

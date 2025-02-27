@@ -13,7 +13,7 @@
     "url": "https://github.com/tsuyoshi-otake/otak-zen/issues"
   },
   "homepage": "https://github.com/tsuyoshi-otake/otak-zen#readme",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "engines": {
     "vscode": "^1.90.0"
   },
