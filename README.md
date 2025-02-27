@@ -1,13 +1,14 @@
 <p align="center">
-  <h1 align="center">otak-禅</h1>
+  <h1 align="center">otak-zen</h1>
   <p align="center">Calm your mind with a fish school meditation VS Code extension</p>
 </p>
 
 ---
 
-This project provides the VS Code extension "otak-禅".  
-The extension adds a customizable status bar button to VS Code. When clicked, it launches a Webview displaying "禅の時間" (Meditation Time).  
+This project provides the VS Code extension "otak-zen". The extension adds a customizable status bar button to VS Code. When clicked, it launches a Webview displaying "禅の時間" (Meditation Time).  
 The Webview content is defined in `src/zen.html` and dynamically renders a serene scene of fish swimming, creating a meditative atmosphere with interactive elements.
+
+![](images/otak-zen.gif)
 
 ## Key Features
 - **Status Bar Display**  

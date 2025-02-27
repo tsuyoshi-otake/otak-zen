@@ -2,9 +2,20 @@
   "name": "otak-zen",
   "displayName": "otak-zen",
   "description": "It has been passed down since ancient times in Japan. Let's experience the Zen spirit with VSCode.",
-  "version": "0.0.1",
+  "publisher": "odangoo",
+  "license": "MIT",
+  "icon": "images/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tsuyoshi-otake/otak-zen"
+  },
+  "bugs": {
+    "url": "https://github.com/tsuyoshi-otake/otak-zen/issues"
+  },
+  "homepage": "https://github.com/tsuyoshi-otake/otak-zen#readme",
+  "version": "1.0.0",
   "engines": {
-    "vscode": "^1.97.0"
+    "vscode": "^1.90.0"
   },
   "categories": [
     "Other"
@@ -30,7 +41,7 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.97.0",
+    "@types/vscode": "^1.90.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
     "@typescript-eslint/eslint-plugin": "^8.22.0",
