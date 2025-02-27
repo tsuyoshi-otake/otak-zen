@@ -93,7 +93,9 @@
                 x: canvas.width / 2 + (Math.random() - 0.5) * 300,
                 y: canvas.height / 2 + (Math.random() - 0.5) * 300,
                 angle: Math.random() * Math.PI * 2,
+                targetAngle: Math.random() * Math.PI * 2,
                 speed: 0.5 + Math.random() * 0.8 + (4 - size) * 0.2, // 速度を遅くする
+                inertia: 0.95, // 慣性を追加
                 currentSpeed: 0,
                 size: size,
                 turnSpeed: 0.01 + Math.random() * 0.02, // 方向転換も少し緩やかに
@@ -298,8 +300,9 @@
                                 const repelY = creature.y - other.y;
                                 const repelAngle = Math.atan2(repelY, repelX);
                                 
-                                // 急な方向転換
-                                creature.angle = 0.7 * creature.angle + 0.3 * repelAngle;
+                                // より滑らかな方向転換
+                                creature.targetAngle = repelAngle;
+                                creature.angle = creature.angle * 0.9 + creature.targetAngle * 0.1;
                             }
                         }
                     });
@@ -319,20 +322,28 @@
                         const cohesionWeight = 0.2 * (1 - creature.personality * 0.5) * sizeInfluence;
                         
                         // 方向を更新
-                        creature.angle = creature.angle + 
-                                      (avgDirection - creature.angle) * alignWeight +
-                                      (toCenterAngle - creature.angle) * cohesionWeight;
+                        const newTargetAngle = creature.targetAngle + 
+                           (avgDirection - creature.targetAngle) * alignWeight +
+                           (toCenterAngle - creature.targetAngle) * cohesionWeight;
+                        
+                        creature.targetAngle = newTargetAngle;
+                        
+                        // 慣性を使用して滑らかに目標角度に近づける
+                        creature.angle = creature.angle * creature.inertia + creature.targetAngle * (1 - creature.inertia);
                     }
                     
                     // 餌への引力
                     if (attractionWeight > 0) {
                         // 餌が見つかった場合は優先度を上げる
                         const foodPriority = 0.5 + creature.hungry * 0.5;
-                        creature.angle = creature.angle * (1 - foodPriority) + attractionAngle * foodPriority;
+                        creature.targetAngle = creature.targetAngle * (1 - foodPriority) + attractionAngle * foodPriority;
+                        
+                        // 慣性を使用して滑らかに目標角度に近づける
+                        creature.angle = creature.angle * creature.inertia + creature.targetAngle * (1 - creature.inertia);
                     }
                     
                     // 個性による揺らぎを追加
-                    creature.angle += wanderAngle * (creature.personality * 0.5);
+                    creature.targetAngle += wanderAngle * (creature.personality * 0.3);
                 } 
                 // 錦鯉の特殊な行動
                 else if (creature.type === 'koi') {
@@ -528,7 +539,9 @@
                         x: canvas.width / 2 + (Math.random() - 0.5) * 300,
                         y: canvas.height / 2 + (Math.random() - 0.5) * 300,
                         angle: Math.random() * Math.PI * 2,
+                        targetAngle: Math.random() * Math.PI * 2,
                         speed: 0.5 + Math.random() * 0.8 + (4 - size) * 0.2,
+                        inertia: 0.95,
                         currentSpeed: 0,
                         size: size,
                         turnSpeed: 0.01 + Math.random() * 0.02,

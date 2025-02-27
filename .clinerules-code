@@ -1,0 +1,76 @@
+# VSCode Extension Development Rules
+
+## 1. Internationalization (i18n)
+- Use VSCode's built-in localization system
+  - package.nls.json: Default (English) strings
+  - package.nls.ja.json: Japanese strings
+- Strings to localize:
+  - Extension description
+  - Command names
+  - Configuration descriptions
+
+## 2. UI Consistency
+- Keep language-independent elements (e.g., "禅") consistent across all languages
+- Set WebView lang attribute according to VSCode's language setting
+- Always localize tooltips and help text
+
+## 3. Animation Best Practices
+- Achieve smooth motion
+  - Separate target values (targetAngle) from current values (angle)
+  - Use inertia to prevent abrupt movements
+  - Use deltaTime for frame-rate independent motion
+- Performance considerations
+  - Use requestAnimationFrame
+  - Optimize rendering (update only necessary parts)
+
+## 4. Version Control
+- Follow semantic versioning
+  - MAJOR: Incompatible changes
+  - MINOR: Backwards-compatible features
+  - PATCH: Backwards-compatible fixes
+- Changelog management
+  - Document all changes in CHANGELOG
+  - Clearly state dates, versions, and change categories
+
+## 5. Code Organization
+- File structure
+  - src/: Source code
+  - images/: Static assets such as icons
+  - out/: Compiled files (gitignore)
+- Code separation
+  - Extension logic (extension.ts)
+  - WebView content (zen.html)
+  - Settings and localization (package.json, package.nls*.json)
+
+## 6. Build Process
+- Utilize npm scripts
+  - vscode:prepublish: Complete build before publishing
+  - compile: TypeScript compilation
+  - postcompile: Copy necessary files
+- Development notes
+  - Always build after changes
+  - Fix compilation errors immediately
+
+## 7. Error Handling and Debugging
+- Handle WebView errors
+- Log extension errors
+- Output appropriate debug information
+
+## 8. Performance Optimization
+- Optimize animations
+- Manage memory usage
+- Release resources properly
+
+## 9. User Settings
+- Define settings in package.json
+- Set appropriate default values
+- Localize setting descriptions
+
+## 10. Marketplace Publishing
+- Verify required files
+  - README.md
+  - CHANGELOG.md
+  - LICENSE
+  - package.json
+- Prepare icons and screenshots
+- Localize descriptions

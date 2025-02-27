@@ -6,7 +6,7 @@ import * as path from 'path';
 export function activate(context: vscode.ExtensionContext) {
     // ステータスバーアイテムの作成
     const zenButton = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-    zenButton.text = "Zen";
+    zenButton.text = "禅";
 
     // 設定値を取得して表示するツールチップを作成
     function updateTooltip() {

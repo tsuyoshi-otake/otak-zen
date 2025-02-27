@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.1] - 2025-02-27
+### Changed
+- Unified status bar text to "禅" for all languages
+- Improved fish movement animation:
+  - Added smooth direction changes using inertia and target angles
+
 ## [1.1.0] - 2025-02-27
 ### Added
 - Added internationalization (i18n) support:

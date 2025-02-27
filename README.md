@@ -12,7 +12,7 @@ The Webview content is defined in `src/zen.html` and dynamically renders a seren
 
 ## Key Features
 - **Status Bar Display**  
-  A button labeled "Zen" appears in the bottom right corner. The tooltip shows current settings and provides quick access to configuration.
+  A button labeled "禅" appears in the bottom right corner. The tooltip shows current settings and provides quick access to configuration.
 - **Language Support**  
   Fully supports both English and Japanese languages, following your VS Code language settings.
 - **Webview Display**  
@@ -25,7 +25,7 @@ The Webview content is defined in `src/zen.html` and dynamically renders a seren
 
 ## Usage
 1. Launch VS Code and install the extension.
-2. Click the "Zen" button in the status bar to open the Webview.
+2. Click the "禅" button in the status bar to open the Webview.
 3. In the Webview, enjoy the animated scene of fish along with interactive feeding actions.
 4. Customize the number of creatures through VS Code settings.
 
