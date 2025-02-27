@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>禅の時間</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            overflow: hidden;
+        }
+        canvas {
+            width: 100vw;
+            height: 100vh;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="zenCanvas"></canvas>
+    <script>
+        // キャンバスの初期化
+        const canvas = document.getElementById('zenCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // キャンバスのリサイズ処理
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // 現在の時刻を取得（アニメーション用）
+        let lastTime = Date.now();
+        
+        // マウス位置の追跡
+        let mouseX = canvas.width / 2;
+        let mouseY = canvas.height / 2;
+        let mousePresent = false;
+        
+        // 餌の配列
+        const foods = [];
+        
+        // マウス移動イベント
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+            mousePresent = true;
+        });
+        
+        // マウス離脱イベント
+        canvas.addEventListener('mouseout', () => {
+            mousePresent = false;
+        });
+        
+        // クリックイベント（餌をまく）
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // 餌をまく（複数の粒を散らばせる）
+            for (let i = 0; i < 20; i++) {
+                const offsetX = (Math.random() - 0.5) * 100;
+                const offsetY = (Math.random() - 0.5) * 100;
+                
+                foods.push({
+                    x: x + offsetX,
+                    y: y + offsetY,
+                    size: 1 + Math.random() * 2.5,
+                    lifespan: 800 + Math.floor(Math.random() * 500), // 寿命を長く
+                    age: 0,
+                    eaten: false // 食べられたかどうかのフラグ
+                });
+            }
+        });
+
+        // すべての生き物の配列（小さな生き物と錦鯉を一緒に管理）
+        const creatures = [];
+        
+        // 小さな生き物の作成
+        const smallCreatureCount = 35;
+        for (let i = 0; i < smallCreatureCount; i++) {
+            const size = 2.5 + Math.random() * 2.5;
+            
+            creatures.push({
+                x: canvas.width / 2 + (Math.random() - 0.5) * 300,
+                y: canvas.height / 2 + (Math.random() - 0.5) * 300,
+                angle: Math.random() * Math.PI * 2,
+                speed: 0.5 + Math.random() * 0.8 + (4 - size) * 0.2, // 速度を遅くする
+                currentSpeed: 0,
+                size: size,
+                turnSpeed: 0.01 + Math.random() * 0.02, // 方向転換も少し緩やかに
+                colorShift: Math.random() * 0.4,
+                wanderPhase: Math.random() * Math.PI * 2,
+                wanderRate: 0.02 + Math.random() * 0.03, // 揺らぎもやや遅く
+                wanderRange: 0.12 + Math.random() * 0.2,
+                personality: Math.random(),
+                hungry: 0.5 + Math.random() * 0.5,
+                type: 'normal',
+                color: {
+                    main: '#FFFFFF',
+                    pattern: '#FFFFFF'
+                }
+            });
+        }
+        
+        // 錦鯉の色パターン（「赤-赤-黒」と「白-赤-白」の2種類に限定）
+        const koiColors = [
+            {head: '#FF0000', middle: '#FF0000', tail: '#000000'}, // 赤-赤-黒
+            {head: '#FFFFFF', middle: '#FF0000', tail: '#FFFFFF'}  // 白-赤-白
+        ];
+        
+        // 錦鯉の作成
+        const koiCount = 7;
+        for (let i = 0; i < koiCount; i++) {
+            const size = (3 + Math.random() * 2) * 1.5; // 通常の魚の1.5倍のサイズ
+            const initialAngle = Math.random() * Math.PI * 2;
+            
+            creatures.push({
+                x: canvas.width / 2 + (Math.random() - 0.5) * 300,
+                y: canvas.height / 2 + (Math.random() - 0.5) * 300,
+                angle: initialAngle,
+                targetAngle: initialAngle, // 目標角度を初期角度と同じに
+                speed: 0.5 + Math.random() * 0.4, // より遅め
+                currentSpeed: 0,
+                size: size,
+                turnSpeed: 0.002 + Math.random() * 0.005, // 非常に緩やかな方向転換
+                wanderPhase: Math.random() * Math.PI * 2,
+                wanderRate: 0.01 + Math.random() * 0.01, // とてもゆっくりとした揺らぎ
+                wanderRange: 0.03 + Math.random() * 0.04, // 小さな揺らぎの範囲
+                hungry: 0.7 + Math.random() * 0.3,
+                straightLineCounter: 0, // 直線運動をカウント
+                straightLineDuration: 300 + Math.floor(Math.random() * 600), // 直線運動の持続時間
+                directionChangeAmount: 0.1 + Math.random() * 0.1, // 非常に小さな方向転換
+                inertia: 0.98, // 慣性（高い値＝方向転換しにくい）
+                type: 'koi',
+                color: koiColors[Math.floor(Math.random() * koiColors.length)]
+            });
+        }
+
+        // アニメーションループ
+        function animate() {
+            // 画面を少しずつフェードアウト（深い宇宙のような効果）
+            ctx.fillStyle = 'rgba(0, 2, 15, 0.15)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 現在時刻の更新
+            const currentTime = Date.now();
+            const deltaTime = (currentTime - lastTime) / 1000;
+            lastTime = currentTime;
+            
+            // 餌の更新と描画
+            for (let i = foods.length - 1; i >= 0; i--) {
+                const food = foods[i];
+                food.age++;
+                
+                // 餌の描画
+                const alpha = Math.max(0, 1 - food.age / food.lifespan);
+                ctx.fillStyle = `rgba(80, 80, 85, ${alpha * 0.7})`;
+                ctx.beginPath();
+                ctx.arc(food.x, food.y, food.size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 古くなった餌を削除
+                if (food.age > food.lifespan) {
+                    foods.splice(i, 1);
+                }
+                
+                // 魚が餌を食べたかチェック
+                let isEaten = false;
+                for (const creature of creatures) {
+                    const dx = food.x - creature.x;
+                    const dy = food.y - creature.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    // 魚が十分近づいたら餌を食べる（体のサイズに合わせた食べる距離）
+                    const eatingDistance = creature.type === 'koi' ? creature.size * 2 : creature.size;
+                    if (distance < eatingDistance) {
+                        isEaten = true;
+                        break;
+                    }
+                }
+                
+                if (isEaten) {
+                    foods.splice(i, 1);
+                }
+            }
+            
+            // 通常の生き物を集めておく（群れの計算用）
+            const normalCreatures = creatures.filter(c => c.type === 'normal');
+            
+            // 全生き物の更新と描画
+            creatures.forEach(creature => {
+                // ワンダリング効果（自然なゆらぎ）
+                creature.wanderPhase += creature.wanderRate;
+                const wanderAngle = Math.sin(creature.wanderPhase) * creature.wanderRange;
+                
+                // 餌への引力
+                let attractionAngle = creature.angle;
+                let attractionWeight = 0;
+                let nearestDistance = Infinity;
+                
+                // 餌への引力
+                foods.forEach(food => {
+                    const dx = food.x - creature.x;
+                    const dy = food.y - creature.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    // 視界内の最も近い餌を探す
+                    if (distance < 300 && distance < nearestDistance) {
+                        nearestDistance = distance;
+                        attractionAngle = Math.atan2(dy, dx);
+                        
+                        // 餌に近いほど強く引き寄せられる
+                        if (creature.type === 'normal') {
+                            attractionWeight = 0.4 * (1 - distance / 300) * (1 - creature.personality * 0.3);
+                            
+                            // 食べる距離に近づくと強く引き寄せられる
+                            if (distance < 30) {
+                                attractionWeight = 0.8; // 強く引き寄せる
+                            }
+                        } else { // 錦鯉
+                            attractionWeight = 0.5 * (1 - distance / 350) * creature.hungry;
+                            
+                            // 食べる距離に近づくと強く引き寄せられる
+                            if (distance < 40) {
+                                attractionWeight = 0.9; // 非常に強く引き寄せる
+                            }
+                        }
+                        
+                // 餌に近づくと少し速度を落とす
+                        if (distance < 50) {
+                            // かなり近い場合は「食べる」速度に調整
+                            if (distance < 15) {
+                                creature.currentSpeed = creature.speed * 0.3; // 非常に遅くなる
+                            } else {
+                                creature.currentSpeed = creature.speed * (creature.type === 'koi' ? 0.5 : 0.6);
+                            }
+                        } else {
+                            creature.currentSpeed = creature.speed;
+                        }
+                    }
+                });
+                
+                // マウスからの回避行動
+                if (mousePresent) {
+                    const dx = mouseX - creature.x;
+                    const dy = mouseY - creature.y;
+                    const distanceToMouse = Math.sqrt(dx * dx + dy * dy);
+                    
+                    // マウスが近くにある場合、緩やかに避ける
+                    if (distanceToMouse < 150) {
+                        // マウスから離れる角度
+                        const avoidAngle = Math.atan2(-dy, -dx);
+                        
+                        // 近いほど強く避ける
+                        const avoidWeight = 0.15 * (1 - distanceToMouse / 150);
+                        
+                        creature.angle = creature.angle * (1 - avoidWeight) + avoidAngle * avoidWeight;
+                    }
+                }
+                
+                // 通常の生き物の群れ行動
+                if (creature.type === 'normal') {
+                    let centerX = 0;
+                    let centerY = 0;
+                    let avgDirection = 0;
+                    let neighborCount = 0;
+                    
+                    // 他の通常生物との関係
+                    normalCreatures.forEach(other => {
+                        if (creature === other) return;
+                        
+                        const dx = other.x - creature.x;
+                        const dy = other.y - creature.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        // 近くの生命体だけを考慮
+                        if (distance < 100) {
+                            // 群れの平均位置に向かう
+                            centerX += other.x;
+                            centerY += other.y;
+                            
+                            // 群れの平均方向に沿う
+                            avgDirection += other.angle;
+                            
+                            neighborCount++;
+                            
+                            // 衝突回避（近すぎるとお互いから離れる）
+                            if (distance < 25) {
+                                const repelX = creature.x - other.x;
+                                const repelY = creature.y - other.y;
+                                const repelAngle = Math.atan2(repelY, repelX);
+                                
+                                // 急な方向転換
+                                creature.angle = 0.7 * creature.angle + 0.3 * repelAngle;
+                            }
+                        }
+                    });
+                    
+                    // 方向更新ロジック（群れ行動）
+                    if (neighborCount > 0) {
+                        centerX /= neighborCount;
+                        centerY /= neighborCount;
+                        avgDirection /= neighborCount;
+                        
+                        // 群れの中心に向かう
+                        const toCenterAngle = Math.atan2(centerY - creature.y, centerX - creature.x);
+                        
+                        // 各影響の強さ（サイズに応じて調整）
+                        const sizeInfluence = 1 - (creature.size - 2.5) / 2.5; // 0.0～1.0の範囲
+                        const alignWeight = 0.3 * (1 - creature.personality * 0.5) * sizeInfluence;
+                        const cohesionWeight = 0.2 * (1 - creature.personality * 0.5) * sizeInfluence;
+                        
+                        // 方向を更新
+                        creature.angle = creature.angle + 
+                                      (avgDirection - creature.angle) * alignWeight +
+                                      (toCenterAngle - creature.angle) * cohesionWeight;
+                    }
+                    
+                    // 餌への引力
+                    if (attractionWeight > 0) {
+                        // 餌が見つかった場合は優先度を上げる
+                        const foodPriority = 0.5 + creature.hungry * 0.5;
+                        creature.angle = creature.angle * (1 - foodPriority) + attractionAngle * foodPriority;
+                    }
+                    
+                    // 個性による揺らぎを追加
+                    creature.angle += wanderAngle * (creature.personality * 0.5);
+                } 
+                // 錦鯉の特殊な行動
+                else if (creature.type === 'koi') {
+                    // 直線運動のカウンターを増やす
+                    creature.straightLineCounter++;
+                    
+                    // 長時間直線運動した後、ゆるやかに方向を変える
+                    if (creature.straightLineCounter >= creature.straightLineDuration) {
+                        // 方向転換
+                        const turnDirection = Math.random() > 0.5 ? 1 : -1;
+                        creature.targetAngle = creature.angle + turnDirection * creature.directionChangeAmount;
+                        
+                        // カウンターリセット
+                        creature.straightLineCounter = 0;
+                        // 次の直線運動の長さをランダムに決定
+                        creature.straightLineDuration = 300 + Math.floor(Math.random() * 600);
+                    }
+                    
+                    // 餌への引力（錦鯉用）
+                    if (attractionWeight > 0) {
+                        // 餌がある場合、目標角度を餌の方向に設定
+                        creature.targetAngle = attractionAngle;
+                    }
+                    
+                    // 慣性を使用して滑らかに目標角度に近づける
+                    creature.angle = creature.angle * creature.inertia + 
+                                  creature.targetAngle * (1 - creature.inertia);
+                    
+                    // 非常に小さな揺らぎだけを追加（ゆるやかな蛇行）
+                    creature.angle += wanderAngle * 0.1;
+                }
+                
+                // 位置の更新
+                const actualSpeed = creature.currentSpeed || creature.speed;
+                creature.x += Math.cos(creature.angle) * actualSpeed;
+                creature.y += Math.sin(creature.angle) * actualSpeed;
+                
+                // 壁回避と画面端の処理
+                const margin = creature.type === 'koi' ? 80 : 50;
+                
+                // 錦鯉の壁回避行動
+                if (creature.type === 'koi') {
+                    const wallMargin = 150; // 壁を察知する距離
+                    const wallDetected = 
+                        creature.x < wallMargin || 
+                        creature.x > canvas.width - wallMargin ||
+                        creature.y < wallMargin || 
+                        creature.y > canvas.height - wallMargin;
+                    
+                    if (wallDetected) {
+                        // 画面中央に向かう角度を計算
+                        const centerAngle = Math.atan2(
+                            canvas.height/2 - creature.y, 
+                            canvas.width/2 - creature.x
+                        );
+                        
+                        // 目標角度を徐々に画面中央方向に
+                        creature.targetAngle = centerAngle;
+                    }
+                }
+                
+                // 画面端処理（ワープ）
+                if (creature.x < -margin) creature.x = canvas.width + margin;
+                if (creature.x > canvas.width + margin) creature.x = -margin;
+                if (creature.y < -margin) creature.y = canvas.height + margin;
+                if (creature.y > canvas.height + margin) creature.y = -margin;
+                
+                // 生き物の描画（通常の魚と錦鯉で描画方法が異なる）
+                ctx.save();
+                ctx.translate(creature.x, creature.y);
+                ctx.rotate(creature.angle);
+                
+                // サイズ設定
+                const bodyLength = creature.size * 4;
+                const bodyHeight = creature.size * 1.2;
+                
+                // 通常の白い魚の描画
+                if (creature.type === 'normal') {
+                    // 微妙な色の違い（青みがかった白）
+                    const brightness = 240 + Math.floor(creature.colorShift * 15);
+                    ctx.fillStyle = `rgb(${brightness}, ${brightness}, 255)`;
+                    
+                    // 生命体の流線型の形を描く
+                    ctx.beginPath();
+                    ctx.moveTo(bodyLength/2, 0);  // 前端（頭部）
+                    
+                    // 上側の曲線
+                    ctx.quadraticCurveTo(
+                        bodyLength/6, -bodyHeight/2,
+                        -bodyLength/2, 0
+                    );
+                    
+                    // 下側の曲線
+                    ctx.quadraticCurveTo(
+                        bodyLength/6, bodyHeight/2,
+                        bodyLength/2, 0
+                    );
+                    
+                    ctx.fill();
+                }
+                
+                // 錦鯉の場合は3色パターンで描画
+                if (creature.type === 'koi') {
+                    // 体を3つのセクションに分ける
+                    const thirdLength = bodyLength / 3;
+                    
+                    // 頭部（第1セクション）
+                    ctx.fillStyle = creature.color.head;
+                    ctx.beginPath();
+                    ctx.moveTo(bodyLength/2, 0);
+                    
+                    // 頭部の上側曲線
+                    ctx.quadraticCurveTo(
+                        bodyLength/6, -bodyHeight/2,
+                        bodyLength/2 - thirdLength, -bodyHeight/4
+                    );
+                    
+                    // 頭部の下側曲線
+                    ctx.quadraticCurveTo(
+                        bodyLength/6, bodyHeight/2,
+                        bodyLength/2, 0
+                    );
+                    ctx.fill();
+                    
+                    // 中央部（第2セクション）
+                    ctx.fillStyle = creature.color.middle;
+                    ctx.beginPath();
+                    ctx.moveTo(bodyLength/2 - thirdLength, -bodyHeight/4);
+                    ctx.lineTo(bodyLength/2 - thirdLength, bodyHeight/4);
+                    ctx.lineTo(bodyLength/2 - 2*thirdLength, bodyHeight/3);
+                    ctx.lineTo(bodyLength/2 - 2*thirdLength, -bodyHeight/3);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // 尾部（第3セクション）
+                    ctx.fillStyle = creature.color.tail;
+                    ctx.beginPath();
+                    ctx.moveTo(bodyLength/2 - 2*thirdLength, -bodyHeight/3);
+                    ctx.lineTo(bodyLength/2 - 2*thirdLength, bodyHeight/3);
+                    ctx.lineTo(-bodyLength/2, 0);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // 目（黒い小さな円）
+                    ctx.fillStyle = '#000000';
+                    ctx.beginPath();
+                    ctx.arc(bodyLength/3, -bodyHeight/4, bodyHeight/8, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                ctx.restore();
+                
+                // 水の動きを表現する軌跡
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+                
+                for(let i = 1; i <= 2; i++) {
+                    const trailSize = creature.size * 0.25;
+                    const offsetX = Math.cos(creature.angle + Math.PI) * (bodyLength/2 + i * 4);
+                    const offsetY = Math.sin(creature.angle + Math.PI) * (bodyLength/2 + i * 4);
+                    
+                    ctx.beginPath();
+                    ctx.arc(
+                        creature.x + offsetX,
+                        creature.y + offsetY,
+                        trailSize,
+                        0,
+                        Math.PI * 2
+                    );
+                    ctx.fill();
+                }
+            });
+
+            // 次のフレームを要求
+            requestAnimationFrame(animate);
+        }
+
+        // アニメーション開始
+        animate();
+    </script>
+</body>
+</html>
