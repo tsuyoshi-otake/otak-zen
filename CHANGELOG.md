@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2025-02-27
+### Added
+- Added internationalization (i18n) support:
+  - English language support (default)
+  - Japanese language support (日本語対応)
+
 ## [1.0.2] - 2025-02-27
 ### Added
 - Added configuration options:

@@ -6,7 +6,7 @@ import * as path from 'path';
 export function activate(context: vscode.ExtensionContext) {
     // ステータスバーアイテムの作成
     const zenButton = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-    zenButton.text = "禅";
+    zenButton.text = "Zen";
 
     // 設定値を取得して表示するツールチップを作成
     function updateTooltip() {
@@ -20,7 +20,7 @@ export function activate(context: vscode.ExtensionContext) {
         tooltip.appendMarkdown('$(zen-mode) Zen Configuration\n\n---\n\n');
         tooltip.appendMarkdown(`small: ${smallCreatureCount}\n`);
         tooltip.appendMarkdown(`koi: ${koiCount}\n\n`);
-        tooltip.appendMarkdown('$(gear) [設定を開く](command:workbench.action.openSettings?%22otakZen%22)');
+        tooltip.appendMarkdown('$(gear) [Open Settings](command:workbench.action.openSettings?%22otakZen%22)');
         
         zenButton.tooltip = tooltip;
     }
@@ -52,7 +52,7 @@ export function activate(context: vscode.ExtensionContext) {
 
         currentPanel = vscode.window.createWebviewPanel(
             'zenView',
-            '禅の時間',
+            'Zen Time',
             vscode.ViewColumn.One,
             {
                 enableScripts: true,

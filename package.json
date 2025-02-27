@@ -1,7 +1,7 @@
 {
   "name": "otak-zen",
   "displayName": "otak-zen",
-  "description": "It has been passed down since ancient times in Japan. Let's experience the Zen spirit with VSCode.",
+  "description": "%extension.description%",
   "publisher": "odangoo",
   "license": "MIT",
   "icon": "images/icon.png",
@@ -13,7 +13,7 @@
     "url": "https://github.com/tsuyoshi-otake/otak-zen/issues"
   },
   "homepage": "https://github.com/tsuyoshi-otake/otak-zen#readme",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "engines": {
     "vscode": "^1.90.0"
   },
@@ -28,7 +28,7 @@
     "commands": [
       {
         "command": "otak-zen.toggleZen",
-        "title": "Toggle Zen Mode"
+        "title": "%command.toggleZen.title%"
       }
     ],
     "configuration": {
@@ -39,14 +39,14 @@
           "default": 35,
           "minimum": 1,
           "maximum": 100,
-          "description": "小さな生き物の数"
+          "description": "%config.smallCreatureCount.description%"
         },
         "otakZen.koiCount": {
           "type": "number",
           "default": 7,
           "minimum": 1,
           "maximum": 20,
-          "description": "錦鯉の数"
+          "description": "%config.koiCount.description%"
         }
       }
     }
