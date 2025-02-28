@@ -46,9 +46,23 @@ export function handleMouseAvoidance(creature, mouseX, mouseY) {
     const dy = mouseY - creature.y;
     const distanceToMouse = Math.sqrt(dx * dx + dy * dy);
 
-    if (distanceToMouse < 150) {
+    // 回避範囲を拡大し、サイズに応じて調整
+    const avoidanceRange = 200 + creature.size * 10;
+
+    if (distanceToMouse < avoidanceRange) {
+        // 近いほど強く回避
         const avoidAngle = Math.atan2(-dy, -dx);
-        const avoidWeight = 0.08 * (1 - distanceToMouse / 150);
+        
+        // 回避力を強化
+        let avoidWeight = 0.2 * (1 - distanceToMouse / avoidanceRange);
+        
+        // 近すぎる場合は更に強く回避
+        if (distanceToMouse < avoidanceRange * 0.3) {
+            avoidWeight = Math.min(0.8, avoidWeight * 2);
+            // 緊急回避時は速度を上げる
+            creature.targetSpeed = creature.speed * 1.5;
+        }
+        
         creature.targetAngle = creature.angle * (1 - avoidWeight) + avoidAngle * avoidWeight;
     }
 }

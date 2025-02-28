@@ -1,4 +1,25 @@
-// 群れ行動の更新ロジック
+// 群れの方向変更の計算
+function calculateGroupDirection(creature, groupCenter, avgDirection, time) {
+    // 時間に基づく方向変更
+    const timeVariation = Math.sin(time * 0.001 + creature.personality * Math.PI * 2) * 0.2;
+    
+    // 群れの中心からの相対位置に基づく変化
+    const dx = groupCenter.x - creature.x;
+    const dy = groupCenter.y - creature.y;
+    const distanceToCenter = Math.sqrt(dx * dx + dy * dy);
+    
+    // 群れの外側にいる個体ほど内側に向かう傾向を強める
+    const turnInward = Math.atan2(dy, dx);
+    const inwardWeight = Math.min(0.3, distanceToCenter / 200);
+    
+    // 個体の性格による方向変更の度合い
+    const personalityFactor = creature.personality * 0.4;
+    
+    // 最終的な方向を計算
+    return avgDirection + timeVariation + 
+           turnInward * inwardWeight + 
+           (Math.random() - 0.5) * personalityFactor;
+}
 export function updateGroupBehavior(creature, centerX, centerY, avgDirection) {
     const toCenterAngle = Math.atan2(centerY - creature.y, centerX - creature.x);
     const sizeInfluence = 1 - (creature.size - 2.5) / 2.5;
@@ -71,7 +92,8 @@ export function updateNormalCreature(creature, neighbors, attraction, wanderAngl
     // リーダー選出とグループ分割のロジック
     if (!creature.isLeader) {
         creature.splitTimer -= 1;
-        if (creature.splitTimer <= 0 && Math.random() < 0.001) {
+        if (creature.splitTimer <= 0 && Math.random() < 0.002) {
+  // リーダー出現確率を上げる
             creature.isLeader = true;
             creature.groupId = creature.groupId === 1 ? 2 : 1;
             creature.splitTimer = 3600; // リセット
@@ -137,18 +159,31 @@ export function updateNormalCreature(creature, neighbors, attraction, wanderAngl
         if (leader) {
             // リーダーへの追従
             const toLeaderAngle = Math.atan2(leader.y - creature.y, leader.x - creature.x);
+            const time = Date.now();
+            
+            // リーダーの動きにもバリエーションを追加
+            if (creature.isLeader) {
+                const leaderVariation = Math.sin(time * 0.001 + creature.personality * Math.PI) * 0.3;
+                creature.targetAngle += leaderVariation;
+            }
+            
             creature.targetAngle = creature.targetAngle * (1 - creature.leaderInfluence) + 
-                toLeaderAngle * creature.leaderInfluence;
+                (toLeaderAngle + Math.sin(time * 0.002) * 0.2) * creature.leaderInfluence;
         } else {
             // 通常の群れ行動
             const myGroup = groupCenters[creature.groupId];
             if (myGroup && myGroup.count > 0) {
                 const centerX = myGroup.x / myGroup.count;
                 const centerY = myGroup.y / myGroup.count;
+                const time = Date.now();
                 
                 // 反発力と群れの結合力を組み合わせる
                 if (repelMagnitude > 0) {
                     const repelWeight = Math.min(0.9, repelMagnitude);
+                    
+                    // ランダムな方向変更を追加
+                    const randomTurn = (Math.random() - 0.5) * 0.2;
+                    creature.targetAngle += randomTurn * creature.personality;
                     const cohesionWeight = 0.2 * (1 - repelWeight);
                     
                     const toCenterAngle = Math.atan2(centerY - creature.y, centerX - creature.x);
@@ -159,8 +194,15 @@ export function updateNormalCreature(creature, neighbors, attraction, wanderAngl
                     
                     // 近接時は速度を落とす
                     creature.targetSpeed = creature.speed * (0.5 + (1 - repelWeight) * 0.5);
+                    
+                    // 方向のブレを追加
+                    creature.targetAngle += Math.sin(time * 0.002 + creature.personality * Math.PI) * 0.1;
                 } else {
-                    updateGroupBehavior(creature, centerX, centerY, avgDirection / maxNeighbors);
+                    // 群れ全体の方向を時間とともに変化させる
+                    const groupDirection = calculateGroupDirection(creature, {x: centerX, y: centerY}, 
+                        avgDirection / maxNeighbors, time);
+                    // 計算した方向を実際に使用
+                    updateGroupBehavior(creature, centerX, centerY, groupDirection);
                 }
             }
         }
