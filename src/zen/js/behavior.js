@@ -1,4 +1,60 @@
 // 群れの方向変更の計算
+// 群れごとの方向定義
+const GROUP_DIRECTIONS = {
+    UP: -Math.PI/2,    // 上方向
+    RIGHT: 0,          // 右方向
+    DOWN: Math.PI/2,   // 下方向
+    LEFT: Math.PI      // 左方向
+};
+
+// 群れの初期設定
+// 各群れは独自の方向性を持ち、時間とともに新しい方向を選択する
+const groupDirections = {
+    // 群れ1: 上方向 (-PI/2)
+    1: { angle: -Math.PI/2, targetAngle: -Math.PI/2, changeTime: 0, preferredDirections: [-Math.PI/2] },
+    // 群れ2: 右方向 (0)
+    2: { angle: 0, targetAngle: 0, changeTime: 0, preferredDirections: [0] }
+};
+
+// 群れごとの好みの方向を設定
+const preferredAngles = [GROUP_DIRECTIONS.UP, GROUP_DIRECTIONS.RIGHT, GROUP_DIRECTIONS.DOWN, GROUP_DIRECTIONS.LEFT];
+
+// 群れの基本方向を更新
+function updateGroupBaseDirection(groupId, time) {
+    const group = groupDirections[groupId] || 
+        (groupDirections[groupId] = { 
+            angle: Math.random() * Math.PI * 2, 
+            targetAngle: Math.random() * Math.PI * 2, 
+            changeTime: time,
+            preferredDirections: [preferredAngles[groupId % preferredAngles.length]]
+        });
+
+    // 10秒ごとに新しい方向を設定
+    if (time - group.changeTime > 10000) {
+        // 群れごとの好みの方向から選択
+        const baseAngle = group.preferredDirections[0];
+        // 好みの方向を中心に±30度の範囲でランダムな方向を選択
+        const variation = (Math.random() - 0.5) * Math.PI / 3;
+        group.targetAngle = baseAngle + variation;
+        group.changeTime = time;
+        
+        // 次の好みの方向を選択（現在の方向に近い方向を優先）
+        const currentIndex = preferredAngles.indexOf(group.preferredDirections[0]);
+        const nextIndex = (currentIndex + (Math.random() > 0.5 ? 1 : -1) + preferredAngles.length) % preferredAngles.length;
+        group.preferredDirections = [preferredAngles[nextIndex]];
+    } else if (time - group.changeTime > 5000) {
+        // 5秒経過で微調整
+        group.targetAngle += (Math.random() - 0.5) * 0.2;
+    }
+
+    // 現在の角度を目標角度にゆっくり近づける
+    const angleDiff = ((group.targetAngle - group.angle + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+    group.angle += angleDiff * 0.001;
+
+    return group.angle;
+}
+
+// 群れの個体ごとの動きを計算
 function calculateGroupDirection(creature, groupCenter, avgDirection, time) {
     // 時間に基づく方向変更
     const timeVariation = Math.sin(time * 0.001 + creature.personality * Math.PI * 2) * 0.2;
@@ -15,9 +71,13 @@ function calculateGroupDirection(creature, groupCenter, avgDirection, time) {
     // 個体の性格による方向変更の度合い
     const personalityFactor = creature.personality * 0.4;
     
+    // 群れの基本方向を取得
+    const baseDirection = updateGroupBaseDirection(creature.groupId, time);
+    
     // 最終的な方向を計算
-    return avgDirection + timeVariation + 
+    return baseDirection + timeVariation + 
            turnInward * inwardWeight + 
+           (avgDirection - baseDirection) * 0.3 +  // 群れの平均方向の影響
            (Math.random() - 0.5) * personalityFactor;
 }
 export function updateGroupBehavior(creature, centerX, centerY, avgDirection) {
@@ -162,13 +222,19 @@ export function updateNormalCreature(creature, neighbors, attraction, wanderAngl
             const time = Date.now();
             
             // リーダーの動きにもバリエーションを追加
+            const baseDirection = updateGroupBaseDirection(creature.groupId, time);
             if (creature.isLeader) {
                 const leaderVariation = Math.sin(time * 0.001 + creature.personality * Math.PI) * 0.3;
-                creature.targetAngle += leaderVariation;
+                creature.targetAngle = baseDirection + leaderVariation;
             }
+ else {
             
-            creature.targetAngle = creature.targetAngle * (1 - creature.leaderInfluence) + 
-                (toLeaderAngle + Math.sin(time * 0.002) * 0.2) * creature.leaderInfluence;
+    // 非リーダーはリーダーと基本方向の中間を目指す
+                const toLeaderAngle = Math.atan2(leader.y - creature.y, leader.x - creature.x);
+                // リーダーの方向と群れの基本方向を組み合わせる
+                creature.targetAngle = creature.targetAngle * (1 - creature.leaderInfluence) + 
+                    (toLeaderAngle * 0.6 + baseDirection * 0.4) * creature.leaderInfluence;
+            }
         } else {
             // 通常の群れ行動
             const myGroup = groupCenters[creature.groupId];
@@ -198,8 +264,8 @@ export function updateNormalCreature(creature, neighbors, attraction, wanderAngl
                     // 方向のブレを追加
                     creature.targetAngle += Math.sin(time * 0.002 + creature.personality * Math.PI) * 0.1;
                 } else {
-                    // 群れ全体の方向を時間とともに変化させる
-                    const groupDirection = calculateGroupDirection(creature, {x: centerX, y: centerY}, 
+                    // 群れごとの基本方向を考慮した動き
+                    const groupDirection = calculateGroupDirection(creature, {x: centerX, y: centerY},
                         avgDirection / maxNeighbors, time);
                     // 計算した方向を実際に使用
                     updateGroupBehavior(creature, centerX, centerY, groupDirection);
