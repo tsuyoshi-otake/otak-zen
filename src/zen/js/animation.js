@@ -83,12 +83,6 @@ function drawKoi(ctx, creature, bodyLength, bodyHeight) {
     ctx.lineTo(-bodyLength/2, tailOffset * 1.5);
     ctx.closePath();
     ctx.fill();
-
-    // 目
-    ctx.fillStyle = '#000000';
-    ctx.beginPath();
-    ctx.arc(bodyLength/3, -bodyHeight/4, bodyHeight/8, 0, Math.PI * 2);
-    ctx.fill();
 }
 
 function drawWaterTrail(ctx, creature, bodyLength) {
