@@ -56,7 +56,10 @@ export function activate(context: vscode.ExtensionContext) {
             vscode.ViewColumn.One,
             {
                 enableScripts: true,
-                retainContextWhenHidden: true
+                retainContextWhenHidden: true,
+                localResourceRoots: [
+                    vscode.Uri.joinPath(context.extensionUri, 'src', 'zen')
+                ]
             }
         );
 
@@ -65,18 +68,15 @@ export function activate(context: vscode.ExtensionContext) {
         const smallCreatureCount = config.get('smallCreatureCount', 35);
         const koiCount = config.get('koiCount', 7);
 
-        // WebViewに設定値を渡す
-        const html = getWebviewContent(context.extensionUri);
-        currentPanel.webview.html = html.replace(
-            '</head>',
-            `<script>
-                window.otakZen = {
-                    smallCreatureCount: ${smallCreatureCount},
-                    koiCount: ${koiCount}
-                };
-            </script>
-            </head>`
-        );
+        // WebViewに設定値とコンテンツを渡す
+        currentPanel.webview.html = getWebviewContent(context.extensionUri, currentPanel.webview);
+
+        // 設定オブジェクトを注入
+        currentPanel.webview.postMessage({
+            command: 'updateCounts',
+            smallCreatureCount: smallCreatureCount,
+            koiCount: koiCount
+        });
 
         currentPanel.onDidDispose(() => {
             currentPanel = undefined;
@@ -105,8 +105,21 @@ export function activate(context: vscode.ExtensionContext) {
 
 export function deactivate() {}
 
-function getWebviewContent(extensionUri: vscode.Uri): string {
-    const htmlPath = path.join(extensionUri.fsPath, 'src', 'zen.html');
+function getWebviewContent(extensionUri: vscode.Uri, webview: vscode.Webview): string {
+    // リソースのパスを取得
+    const htmlPath = path.join(extensionUri.fsPath, 'src', 'zen', 'index.html');
     const htmlContent = fs.readFileSync(htmlPath, 'utf8');
-    return htmlContent;
+
+    // WebView内でのリソースパスを取得
+    const stylesUri = webview.asWebviewUri(
+        vscode.Uri.joinPath(extensionUri, 'src', 'zen', 'styles.css')
+    );
+    const mainScriptUri = webview.asWebviewUri(
+        vscode.Uri.joinPath(extensionUri, 'src', 'zen', 'js', 'main.js')
+    );
+
+    // HTMLコンテンツを処理してリソースパスを更新
+    return htmlContent
+        .replace('href="styles.css"', `href="${stylesUri}"`)
+        .replace('src="js/main.js"', `src="${mainScriptUri}"`);
 }
