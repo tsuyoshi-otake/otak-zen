@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.1] - 2025-03-02
+### Changed
+- Removed internationalization support to simplify maintenance
+- Applied code style fixes:
+  - Added curly braces to single-line if and while statements
+  - Improved code consistency
+
 ## [1.2.0] - 2025-02-28
 ### Changed
 - Reverted creature movement logic to its original implementation for more natural swarm behavior
