@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.2.1] - 2025-03-02
+## [1.3.1] - 2025-03-02
 ### Changed
 - Removed internationalization support to simplify maintenance
 - Applied code style fixes:

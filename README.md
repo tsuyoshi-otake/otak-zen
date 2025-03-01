@@ -6,15 +6,13 @@
 ---
 
 This project provides the VS Code extension "otak-zen". The extension adds a customizable status bar button to VS Code. When clicked, it launches a Webview displaying "Zen Time".  
-The Webview content is defined in `src/zen.html` and dynamically renders a serene scene of fish swimming, creating a meditative atmosphere with interactive elements. The extension supports both English and Japanese (日本語) languages.
+The Webview content is defined in `src/zen.html` and dynamically renders a serene scene of fish swimming, creating a meditative atmosphere with interactive elements.
 
 ![](images/otak-zen.gif)
 
 ## Key Features
 - **Status Bar Display**  
   A button labeled "禅" appears in the bottom right corner. The tooltip shows current settings and provides quick access to configuration.
-- **Language Support**  
-  Fully supports both English and Japanese languages, following your VS Code language settings.
 - **Webview Display**  
   When triggered, the extension (as managed in `src/extension.ts`) opens a Webview which loads the content from `src/zen.html`.  
   - Uses HTML5 canvas to render dynamic animations of fish.
@@ -34,8 +32,6 @@ The Webview content is defined in `src/zen.html` and dynamically renders a seren
   Uses the VS Code API to create the status bar button and manage the Webview display.
 - **Webview Content:** `src/zen.html`  
   Contains the HTML and JavaScript to generate the dynamic, animated meditation scene with fish.
-- **Localization:** `package.nls.json` and `package.nls.ja.json`  
-  Contains localized strings for English and Japanese language support.
 
 ## Demo
 After installation, click the "Zen" button in the status bar to experience the serene fish meditation in action.
