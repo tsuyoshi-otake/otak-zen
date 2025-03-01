@@ -1,6 +1,11 @@
 import { koiColors } from './config.js';
 
-// 小さな生き物の作成
+/**
+ * 小さな生き物の作成
+ * @param {number} canvasWidth - キャンバスの幅
+ * @param {number} canvasHeight - キャンバスの高さ
+ * @returns {Object} 生成された生き物オブジェクト
+ */
 export function createSmallCreature(canvasWidth, canvasHeight) {
     const size = 2.5 + Math.random() * 2.5;
     
@@ -33,7 +38,12 @@ export function createSmallCreature(canvasWidth, canvasHeight) {
     };
 }
 
-// 錦鯉の作成
+/**
+ * 錦鯉の作成
+ * @param {number} canvasWidth - キャンバスの幅
+ * @param {number} canvasHeight - キャンバスの高さ
+ * @returns {Object} 生成された錦鯉オブジェクト
+ */
 export function createKoi(canvasWidth, canvasHeight) {
     const size = (3 + Math.random() * 2) * 1.5;
     const initialAngle = Math.random() * Math.PI * 2;
@@ -65,10 +75,20 @@ export function createKoi(canvasWidth, canvasHeight) {
     };
 }
 
-// 生き物の更新ロジック
+/**
+ * 生き物の更新ロジック
+ * @param {Object} creature - 更新する生き物
+ * @param {number} deltaTime - 前回の更新からの経過時間
+ * @param {number} mouseX - マウスのX座標
+ * @param {number} mouseY - マウスのY座標
+ * @param {boolean} mousePresent - マウスが存在するかどうか
+ * @param {Array} foods - 餌のリスト
+ * @param {Array} neighbors - 周辺の他の生き物
+ * @param {Object} canvas - キャンバス要素
+ */
 export function updateCreature(creature, deltaTime, mouseX, mouseY, mousePresent, foods, neighbors, canvas) {
     // ワンダリング効果
-    creature.wanderPhase += creature.wanderRate;
+    creature.wanderPhase += creature.wanderRate * deltaTime * 60;
     const wanderAngle = Math.sin(creature.wanderPhase) * creature.wanderRange;
 
     // 餌への引力の計算
@@ -93,6 +113,12 @@ export function updateCreature(creature, deltaTime, mouseX, mouseY, mousePresent
     handleBoundaries(creature, canvas);
 }
 
+/**
+ * 餌への引力を計算
+ * @param {Object} creature - 生き物
+ * @param {Array} foods - 餌のリスト
+ * @returns {Object} 引力の角度と重み
+ */
 function calculateFoodAttraction(creature, foods) {
     let nearestDistance = Infinity;
     let attractionAngle = creature.angle;
@@ -102,23 +128,27 @@ function calculateFoodAttraction(creature, foods) {
         const dx = food.x - creature.x;
         const dy = food.y - creature.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        // 通常の生き物と錦鯉で感知範囲を変える
+        const detectionRange = creature.type === 'koi' ? 350 : 300;
 
-        if (distance < 300 && distance < nearestDistance) {
+        if (distance < detectionRange && distance < nearestDistance) {
             nearestDistance = distance;
             attractionAngle = Math.atan2(dy, dx);
             
             if (creature.type === 'normal') {
-                attractionWeight = 0.4 * (1 - distance / 300) * (1 - creature.personality * 0.3);
+                attractionWeight = 0.4 * (1 - distance / detectionRange) * (1 - creature.personality * 0.3);
                 if (distance < 30) {
                     attractionWeight = 0.8;
                 }
             } else {
-                attractionWeight = 0.5 * (1 - distance / 350) * creature.hungry;
+                attractionWeight = 0.5 * (1 - distance / detectionRange) * creature.hungry;
                 if (distance < 40) {
                     attractionWeight = 0.9;
                 }
             }
 
+            // 餌に近いときの速度調整
             if (distance < 50) {
                 creature.targetSpeed = distance < 20 ? 
                     creature.speed * 0.3 : 
@@ -134,18 +164,40 @@ function calculateFoodAttraction(creature, foods) {
     return { angle: attractionAngle, weight: attractionWeight };
 }
 
+/**
+ * マウスからの回避行動
+ * @param {Object} creature - 生き物
+ * @param {number} mouseX - マウスのX座標
+ * @param {number} mouseY - マウスのY座標
+ */
 function handleMouseAvoidance(creature, mouseX, mouseY) {
     const dx = mouseX - creature.x;
     const dy = mouseY - creature.y;
     const distanceToMouse = Math.sqrt(dx * dx + dy * dy);
+    
+    // 生き物のタイプに応じて回避感度を変える
+    const avoidRadius = creature.type === 'koi' ? 180 : 150;
+    const avoidStrength = creature.type === 'koi' ? 0.1 : 0.08;
 
-    if (distanceToMouse < 150) {
+    if (distanceToMouse < avoidRadius) {
         const avoidAngle = Math.atan2(-dy, -dx);
-        const avoidWeight = 0.08 * (1 - distanceToMouse / 150);
+        const avoidWeight = avoidStrength * (1 - distanceToMouse / avoidRadius);
         creature.targetAngle = creature.angle * (1 - avoidWeight) + avoidAngle * avoidWeight;
+        
+        // マウスに近すぎる場合は加速
+        if (distanceToMouse < avoidRadius / 2) {
+            creature.targetSpeed = creature.speed * 1.2;
+        }
     }
 }
 
+/**
+ * 通常の生き物の更新
+ * @param {Object} creature - 生き物
+ * @param {Array} neighbors - 周辺の他の生き物
+ * @param {Object} attraction - 餌への引力情報
+ * @param {number} wanderAngle - ランダムな動きの角度
+ */
 function updateNormalCreature(creature, neighbors, attraction, wanderAngle) {
     let centerX = 0;
     let centerY = 0;
@@ -154,7 +206,9 @@ function updateNormalCreature(creature, neighbors, attraction, wanderAngle) {
 
     // 近くの個体から群れの影響を計算
     neighbors.forEach(other => {
-        if (creature === other) return;
+        if (creature === other) {
+            return;
+        }
 
         const dx = other.x - creature.x;
         const dy = other.y - creature.y;
@@ -202,12 +256,25 @@ function updateNormalCreature(creature, neighbors, attraction, wanderAngle) {
 
     // 個性による影響を追加
     creature.targetAngle += wanderAngle * (creature.personality * 0.15);
-    creature.angle = creature.angle * creature.inertia + creature.targetAngle * (1 - creature.inertia);
+    
+    // 角度の更新（慣性を考慮）
+    const angleDiff = normalizeAngle(creature.targetAngle - creature.angle);
+    const turnAmount = Math.min(Math.abs(angleDiff), creature.turnSpeed * (1 + creature.personality)) * Math.sign(angleDiff);
+    creature.angle = normalizeAngle(creature.angle + turnAmount);
 }
 
+/**
+ * 錦鯉の更新
+ * @param {Object} creature - 生き物
+ * @param {number} deltaTime - 前回の更新からの経過時間
+ * @param {Object} attraction - 餌への引力情報
+ * @param {number} wanderAngle - ランダムな動きの角度
+ * @param {Object} canvas - キャンバス要素
+ */
 function updateKoi(creature, deltaTime, attraction, wanderAngle, canvas) {
     creature.straightLineCounter += deltaTime * 60;
 
+    // 一定時間後に方向転換
     if (creature.straightLineCounter >= creature.straightLineDuration) {
         const turnDirection = Math.random() > 0.5 ? 1 : -1;
         const currentDirection = Math.atan2(Math.sin(creature.angle), Math.cos(creature.angle));
@@ -216,53 +283,118 @@ function updateKoi(creature, deltaTime, attraction, wanderAngle, canvas) {
 
         creature.straightLineCounter = 0;
         creature.straightLineDuration = 200 + Math.floor(Math.random() * 400);
+        
+        // 時々大きく方向転換
+        if (Math.random() < 0.3) {
+            creature.targetAngle = Math.random() * Math.PI * 2;
+        }
     }
 
+    // 餌に引き寄せられる
     if (attraction.weight > 0) {
-        creature.targetAngle = attraction.angle;
+        const hungerInfluence = 0.2 + creature.hungry * 0.8;
+        creature.targetAngle = creature.angle * (1 - attraction.weight * hungerInfluence) +
+            attraction.angle * (attraction.weight * hungerInfluence);
+        
+        // 餌に近いとき特別な動き
+        if (attraction.weight > 0.7) {
+            creature.tailAmplitude = Math.min(0.3, creature.tailAmplitude + 0.01);
+        }
     }
 
-    creature.angle = creature.angle * creature.inertia + 
-        creature.targetAngle * (1 - creature.inertia);
+    // 角度の緩やかな更新
+    const angleDiff = normalizeAngle(creature.targetAngle - creature.angle);
+    const turnAmount = Math.min(Math.abs(angleDiff), creature.turnSpeed * 1.5) * Math.sign(angleDiff);
+    creature.angle = normalizeAngle(creature.angle + turnAmount);
+    
+    // わずかなランダム性を追加
     creature.angle += wanderAngle * 0.05;
 
-    // 壁回避
+    // 壁回避の改善
     const wallMargin = 150;
-    if (creature.x < wallMargin || 
-        creature.x > canvas.width - wallMargin ||
-        creature.y < wallMargin || 
-        creature.y > canvas.height - wallMargin) {
-        
-        const centerAngle = Math.atan2(
-            canvas.height/2 - creature.y, 
-            canvas.width/2 - creature.x
-        );
-        creature.targetAngle = centerAngle;
+    const edgeWeight = 0.1;
+    
+    if (creature.x < wallMargin) {
+        const turnAngle = 0;  // 右向き
+        creature.targetAngle = creature.angle * (1 - edgeWeight) + turnAngle * edgeWeight;
+    } else if (creature.x > canvas.width - wallMargin) {
+        const turnAngle = Math.PI; // 左向き
+        creature.targetAngle = creature.angle * (1 - edgeWeight) + turnAngle * edgeWeight;
+    }
+    
+    if (creature.y < wallMargin) {
+        const turnAngle = Math.PI / 2;  // 下向き
+        creature.targetAngle = creature.angle * (1 - edgeWeight) + turnAngle * edgeWeight;
+    } else if (creature.y > canvas.height - wallMargin) {
+        const turnAngle = -Math.PI / 2;  // 上向き
+        creature.targetAngle = creature.angle * (1 - edgeWeight) + turnAngle * edgeWeight;
     }
 }
 
+/**
+ * 生き物の位置更新
+ * @param {Object} creature - 生き物
+ * @param {number} deltaTime - 前回の更新からの経過時間
+ */
 function updatePosition(creature, deltaTime) {
     const maxAcceleration = creature.type === 'koi' ? 0.03 : 0.05;
     const acceleration = Math.max(-maxAcceleration, Math.min(maxAcceleration, 
         (creature.targetSpeed - creature.currentSpeed) * 0.1));
     creature.currentSpeed = creature.currentSpeed + acceleration;
 
-    creature.tailPhase += deltaTime * (creature.currentSpeed * 2 + 1);
-    const turnFactor = Math.abs(creature.angle - creature.targetAngle) * 2;
-    creature.tailAmplitude = Math.min(0.3, 
-        creature.type === 'koi' ? 0.05 + turnFactor * 0.1 : 0.1 + turnFactor * 0.2);
+    // 尾の動き
+    const tailSpeed = creature.type === 'koi' ? 2 : 3;
+    creature.tailPhase += deltaTime * (creature.currentSpeed * tailSpeed + 1);
+    const turnFactor = Math.abs(normalizeAngle(creature.angle - creature.targetAngle)) * 2;
+    
+    // 生き物のタイプに基づく尾の振幅調整
+    if (creature.type === 'koi') {
+        creature.tailAmplitude = Math.min(0.3, 0.05 + turnFactor * 0.1 + creature.currentSpeed * 0.1);
+    } else {
+        creature.tailAmplitude = Math.min(0.3, 0.1 + turnFactor * 0.2);
+    }
+    
     creature.tailAngle = Math.sin(creature.tailPhase) * creature.tailAmplitude;
 
-    const actualSpeed = creature.currentSpeed || creature.speed;
+    // 動きの更新
+    const actualSpeed = (creature.currentSpeed || creature.speed) * deltaTime * 60;
     creature.x += Math.cos(creature.angle) * actualSpeed;
     creature.y += Math.sin(creature.angle) * actualSpeed;
 }
 
+/**
+ * 画面の境界処理
+ * @param {Object} creature - 生き物
+ * @param {Object} canvas - キャンバス要素
+ */
 function handleBoundaries(creature, canvas) {
     const margin = creature.type === 'koi' ? 80 : 50;
     
-    if (creature.x < -margin) creature.x = canvas.width + margin;
-    if (creature.x > canvas.width + margin) creature.x = -margin;
-    if (creature.y < -margin) creature.y = canvas.height + margin;
-    if (creature.y > canvas.height + margin) creature.y = -margin;
+    if (creature.x < -margin) {
+        creature.x = canvas.width + margin;
+    }
+    if (creature.x > canvas.width + margin) {
+        creature.x = -margin;
+    }
+    if (creature.y < -margin) {
+        creature.y = canvas.height + margin;
+    }
+    if (creature.y > canvas.height + margin) {
+        creature.y = -margin;
+    }
+}
+
+/**
+ * 角度の正規化（-π〜πの範囲に）
+ * @param {number} angle - 正規化する角度
+ * @returns {number} 正規化された角度
+ */
+function normalizeAngle(angle) {
+    while (angle > Math.PI) {
+        angle -= Math.PI * 2;
+    }
+    while (angle < -Math.PI) {
+        angle += Math.PI * 2;
+    }
+    return angle;
 }

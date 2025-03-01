@@ -1,6 +1,0 @@
-{
-    "extension.description": "日本の古来からの伝統。VSCodeで禅の精神を体験しましょう。",
-    "command.toggleZen.title": "禅モードの切り替え",
-    "config.smallCreatureCount.description": "小さな生き物の数",
-    "config.koiCount.description": "錦鯉の数"
-}

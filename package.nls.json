@@ -1,6 +1,0 @@
-{
-    "extension.description": "Experience the Zen spirit with VSCode, a tradition passed down from ancient Japan.",
-    "command.toggleZen.title": "Toggle Zen Mode",
-    "config.smallCreatureCount.description": "Number of small creatures",
-    "config.koiCount.description": "Number of koi fish"
-}

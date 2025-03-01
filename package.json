@@ -1,7 +1,7 @@
 {
   "name": "otak-zen",
   "displayName": "otak-zen",
-  "description": "%extension.description%",
+  "description": "Experience the Zen spirit with VSCode, a tradition passed down from ancient Japan.",
   "publisher": "odangoo",
   "license": "MIT",
   "icon": "images/icon.png",
@@ -28,7 +28,7 @@
     "commands": [
       {
         "command": "otak-zen.toggleZen",
-        "title": "%command.toggleZen.title%"
+        "title": "Toggle Zen Mode"
       }
     ],
     "configuration": {
@@ -39,14 +39,14 @@
           "default": 35,
           "minimum": 1,
           "maximum": 100,
-          "description": "%config.smallCreatureCount.description%"
+          "description": "Number of small creatures"
         },
         "otakZen.koiCount": {
           "type": "number",
           "default": 7,
           "minimum": 1,
           "maximum": 20,
-          "description": "%config.koiCount.description%"
+          "description": "Number of koi fish"
         }
       }
     }
@@ -61,15 +61,15 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.90.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
+    "@types/vscode": "^1.90.0",
     "@typescript-eslint/eslint-plugin": "^8.22.0",
     "@typescript-eslint/parser": "^8.22.0",
-    "eslint": "^9.19.0",
-    "typescript": "^5.7.3",
     "@vscode/test-cli": "^0.0.10",
-    "@vscode/test-electron": "^2.4.1"
+    "@vscode/test-electron": "^2.4.1",
+    "eslint": "^9.19.0",
+    "typescript": "^5.7.3"
   },
   "files": [
     "out",
