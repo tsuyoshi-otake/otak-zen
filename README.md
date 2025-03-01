@@ -64,7 +64,6 @@ Enhance your productivity with this Pomodoro Timer extension. Helps balance focu
 ### [otak-zen](https://marketplace.visualstudio.com/items?itemName=odangoo.otak-zen)
 Experience a distraction-free workflow with otak-zen. This extension transforms your VS Code interface into a minimalist environment by hiding non-essential UI elements, allowing you to focus solely on coding. Customize which components to show or hide, and toggle zen mode quickly via commands or the status bar.
 
-
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
