@@ -120,22 +120,22 @@ export function updateCreature(creature, deltaTime, mouseX, mouseY, mousePresent
  * @returns {Object} 引力の角度と重み
  */
 function calculateFoodAttraction(creature, foods) {
-    let nearestDistance = Infinity;
+    let nearestDistanceSquared = Infinity;
     let attractionAngle = creature.angle;
     let attractionWeight = 0;
+    const detectionRange = creature.type === 'koi' ? 350 : 300;
+    const detectionRangeSquared = detectionRange * detectionRange;
 
-    foods.forEach(food => {
+    for (const food of foods) {
         const dx = food.x - creature.x;
         const dy = food.y - creature.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        
-        // 通常の生き物と錦鯉で感知範囲を変える
-        const detectionRange = creature.type === 'koi' ? 350 : 300;
+        const distanceSquared = dx * dx + dy * dy;
 
-        if (distance < detectionRange && distance < nearestDistance) {
-            nearestDistance = distance;
+        if (distanceSquared < detectionRangeSquared && distanceSquared < nearestDistanceSquared) {
+            nearestDistanceSquared = distanceSquared;
+            const distance = Math.sqrt(distanceSquared);
             attractionAngle = Math.atan2(dy, dx);
-            
+
             if (creature.type === 'normal') {
                 attractionWeight = 0.4 * (1 - distance / detectionRange) * (1 - creature.personality * 0.3);
                 if (distance < 30) {
@@ -159,7 +159,7 @@ function calculateFoodAttraction(creature, foods) {
                 creature.targetSpeed = creature.speed;
             }
         }
-    });
+    }
 
     return { angle: attractionAngle, weight: attractionWeight };
 }
@@ -205,29 +205,29 @@ function updateNormalCreature(creature, neighbors, attraction, wanderAngle) {
     let neighborCount = 0;
 
     // 近くの個体から群れの影響を計算
-    neighbors.forEach(other => {
+    for (const other of neighbors) {
         if (creature === other) {
-            return;
+            continue;
         }
 
         const dx = other.x - creature.x;
         const dy = other.y - creature.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
+        const distanceSquared = dx * dx + dy * dy;
 
-        if (distance < 100) {
+        if (distanceSquared < 10000) {
             centerX += other.x;
             centerY += other.y;
             avgDirection += other.angle;
             neighborCount++;
 
-            // 近すぎる場合は離れる
-            if (distance < 25) {
+            if (distanceSquared < 625) {
+                const distance = Math.sqrt(distanceSquared);
                 const repelAngle = Math.atan2(creature.y - other.y, creature.x - other.x);
                 const repelWeight = 0.2 * (1 - distance / 25);
                 creature.targetAngle = creature.angle * (1 - repelWeight) + repelAngle * repelWeight;
             }
         }
-    });
+    }
 
     // 群れの影響を適用
     if (neighborCount > 0) {

@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.2] - 2026-06-08
+### Changed
+- Optimized Webview simulation updates with bounded food particles and spatial indexes for local neighbor and food queries.
+- Reduced extension/webview resource retention by using a ready handshake and panel-scoped disposables.
+
+### Fixed
+- Added a Webview content security policy with nonce-based script loading.
+- Synchronized packaging metadata and removed duplicate Webview asset copying.
+
 ## [1.3.1] - 2025-03-02
 ### Changed
 - Removed internationalization support to simplify maintenance

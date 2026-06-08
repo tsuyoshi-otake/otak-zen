@@ -2,12 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src {{cspSource}}; script-src 'nonce-{{nonce}}' {{cspSource}};">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zen Time</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <canvas id="zenCanvas"></canvas>
-    <script type="module" src="js/main.js"></script>
+    <script type="module" nonce="{{nonce}}" src="js/main.js"></script>
 </body>
 </html>

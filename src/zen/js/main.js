@@ -1,37 +1,42 @@
 import { defaultSettings } from './config.js';
 import { createSmallCreature, createKoi, updateCreature } from './creatures.js';
 import { drawCreature, drawParameters, drawFood, fadeScreen } from './animation.js';
+import { SpatialIndex } from './spatialIndex.js';
+import { addFoodBurst, updateFoods } from './food.js';
 
-// キャンバスの初期化
 const canvas = document.getElementById('zenCanvas');
 const ctx = canvas.getContext('2d');
+const vscodeApi = typeof acquireVsCodeApi === 'function' ? acquireVsCodeApi() : undefined;
 
-// 状態管理
-let lastTime = Date.now();
+let lastTime = performance.now();
 let mouseX = canvas.width / 2;
 let mouseY = canvas.height / 2;
 let mousePresent = false;
 let showParameters = false;
+let animationFrameId = 0;
+let isRunning = false;
+
 const creatures = [];
 const foods = [];
+const creatureIndex = new SpatialIndex(96);
+const normalCreatureIndex = new SpatialIndex(96);
+const foodIndex = new SpatialIndex(128);
 
-// キャンバスのリサイズ処理
 function resizeCanvas() {
     canvas.width = Math.floor(window.innerWidth);
     canvas.height = Math.floor(window.innerHeight);
 }
 
-// イベントリスナーの設定
 function setupEventListeners() {
     window.addEventListener('resize', resizeCanvas);
-    
+
     canvas.addEventListener('mousemove', (e) => {
         const rect = canvas.getBoundingClientRect();
         mouseX = e.clientX - rect.left;
         mouseY = e.clientY - rect.top;
         mousePresent = true;
     });
-    
+
     canvas.addEventListener('mouseout', () => {
         mousePresent = false;
     });
@@ -42,129 +47,148 @@ function setupEventListeners() {
             showParameters = !showParameters;
         }
     });
-    
+
     canvas.addEventListener('click', createFood);
+    window.addEventListener('pagehide', stopAnimation);
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            stopAnimation();
+        } else {
+            startAnimation();
+        }
+    });
 }
 
-// 餌の作成
 function createFood(e) {
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    
-    for (let i = 0; i < 20; i++) {
-        const offsetX = (Math.random() - 0.5) * 100;
-        const offsetY = (Math.random() - 0.5) * 100;
-        
-        foods.push({
-            x: x + offsetX,
-            y: y + offsetY,
-            size: 1 + Math.random() * 2.5,
-            lifespan: 800 + Math.floor(Math.random() * 500),
-            age: 0,
-            eaten: false
-        });
-    }
+
+    addFoodBurst(foods, x, y);
 }
 
-// 生き物の初期化
 function initializeCreatures() {
-    const settings = window.otakZen || defaultSettings;
-    
-    // 小さな生き物の作成
-    for (let i = 0; i < settings.smallCreatureCount; i++) {
+    applyCreatureCounts(window.otakZen || defaultSettings);
+}
+
+function applyCreatureCounts(settings) {
+    const smallCreatureCount = getSafeCount(settings.smallCreatureCount, defaultSettings.smallCreatureCount, 1, 100);
+    const koiCount = getSafeCount(settings.koiCount, defaultSettings.koiCount, 1, 20);
+
+    creatures.length = 0;
+
+    for (let i = 0; i < smallCreatureCount; i++) {
         creatures.push(createSmallCreature(canvas.width, canvas.height));
     }
-    
-    // 錦鯉の作成
-    for (let i = 0; i < settings.koiCount; i++) {
+
+    for (let i = 0; i < koiCount; i++) {
         creatures.push(createKoi(canvas.width, canvas.height));
     }
 }
 
-// 餌の更新
-function updateFoods() {
-    for (let i = foods.length - 1; i >= 0; i--) {
-        const food = foods[i];
-        food.age++;
-        
-        // 古くなった餌を削除
-        if (food.age > food.lifespan) {
-            foods.splice(i, 1);
-            continue;
+function getSafeCount(value, defaultValue, min, max) {
+    const numberValue = Number(value);
+    if (!Number.isFinite(numberValue)) {
+        return defaultValue;
+    }
+
+    return Math.min(max, Math.max(min, Math.floor(numberValue)));
+}
+
+function animate() {
+    fadeScreen(ctx, canvas);
+
+    const currentTime = performance.now();
+    const deltaTime = Math.min(0.05, (currentTime - lastTime) / 1000);
+    lastTime = currentTime;
+
+    rebuildCreatureIndexes();
+    updateFoods(foods, creatureIndex);
+    rebuildFoodIndex();
+
+    for (const food of foods) {
+        drawFood(ctx, food);
+    }
+
+    for (const creature of creatures) {
+        const detectionRange = creature.type === 'koi' ? 350 : 300;
+        const nearbyFoods = foodIndex.queryCircle(creature.x, creature.y, detectionRange);
+        const nearbyCreatures = creature.type === 'normal'
+            ? normalCreatureIndex.queryCircle(creature.x, creature.y, 100)
+            : [];
+
+        updateCreature(creature, deltaTime, mouseX, mouseY, mousePresent, nearbyFoods, nearbyCreatures, canvas);
+        drawCreature(ctx, creature);
+
+        if (showParameters) {
+            drawParameters(ctx, creature);
         }
-        
-        // 食べられた判定
-        let isEaten = false;
-        for (const creature of creatures) {
-            const dx = food.x - creature.x;
-            const dy = food.y - creature.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            
-            const eatingDistance = creature.type === 'koi' ? creature.size * 2 : creature.size;
-            if (distance < eatingDistance) {
-                isEaten = true;
-                break;
-            }
-        }
-        
-        if (isEaten) {
-            foods.splice(i, 1);
+    }
+
+    if (isRunning) {
+        animationFrameId = requestAnimationFrame(animate);
+    }
+}
+
+function rebuildCreatureIndexes() {
+    creatureIndex.clear();
+    normalCreatureIndex.clear();
+
+    for (const creature of creatures) {
+        creatureIndex.insert(creature);
+        if (creature.type === 'normal') {
+            normalCreatureIndex.insert(creature);
         }
     }
 }
 
-// メインのアニメーションループ
-function animate() {
-    fadeScreen(ctx, canvas);
-    
-    const currentTime = Date.now();
-    const deltaTime = (currentTime - lastTime) / 1000;
-    lastTime = currentTime;
-    
-    // 餌の更新と描画
-    updateFoods();
-    foods.forEach(food => drawFood(ctx, food));
-    
-    // 通常の生き物を集める（群れの計算用）
-    const normalCreatures = creatures.filter(c => c.type === 'normal');
-    
-    // 生き物の更新と描画
-    creatures.forEach(creature => {
-        updateCreature(creature, deltaTime, mouseX, mouseY, mousePresent, foods, normalCreatures, canvas);
-        drawCreature(ctx, creature);
-        
-        if (showParameters) {
-            drawParameters(ctx, creature);
-        }
-    });
-    
-    requestAnimationFrame(animate);
+function rebuildFoodIndex() {
+    foodIndex.clear();
+
+    for (const food of foods) {
+        foodIndex.insert(food);
+    }
 }
 
-// アプリケーションの初期化
+function startAnimation() {
+    if (isRunning) {
+        return;
+    }
+
+    isRunning = true;
+    lastTime = performance.now();
+    animationFrameId = requestAnimationFrame(animate);
+}
+
+function stopAnimation() {
+    if (!isRunning) {
+        return;
+    }
+
+    isRunning = false;
+    cancelAnimationFrame(animationFrameId);
+    animationFrameId = 0;
+}
+
 function initialize() {
     resizeCanvas();
     setupEventListeners();
     initializeCreatures();
-    animate();
+    startAnimation();
+    notifyReady();
 }
 
-// VSCodeからのメッセージハンドラー
 window.addEventListener('message', event => {
     const message = event.data;
-    if (message.command === 'updateCounts') {
-        creatures.length = 0;
-        
-        for (let i = 0; i < message.smallCreatureCount; i++) {
-            creatures.push(createSmallCreature(canvas.width, canvas.height));
-        }
-        
-        for (let i = 0; i < message.koiCount; i++) {
-            creatures.push(createKoi(canvas.width, canvas.height));
-        }
+    if (message && message.command === 'updateCounts') {
+        applyCreatureCounts(message);
     }
 });
 
-// アプリケーションの開始
+function notifyReady() {
+    if (vscodeApi) {
+        vscodeApi.postMessage({ command: 'ready' });
+    }
+}
+
 initialize();
